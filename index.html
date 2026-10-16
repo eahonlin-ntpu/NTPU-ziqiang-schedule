@@ -1,0 +1,1002 @@
+<title>自強大樓教室課表</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 校徽＋標題頁首 → 分頁列 → 各分頁內容；固定深色主題，配色取自校徽（深藍底、金色強調、綠＝推廣、紅＝外借） */
+:root{
+  --bg:#0d1322; --surface:#151d2f; --surface2:#1b2539; --ink:#e7ebf3; --muted:#b9c2d6; --line:#4a5a82; --line2:#36435f;
+  --accent:#f1ab40; --on-accent:#1a1406; --today:#232b40;
+  --edu:#7fe0a8; --edu-bg:#163a25; --edu-bd:#4fae78;
+  --rent:#ffa29d; --rent-bg:#45202a; --rent-bd:#c95a63;
+  --danger:#ff8a80; --live:#ff5a4f; --scrim:rgba(3,6,14,.7);
+  --f-display:"Noto Serif TC","Songti TC",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;margin:0}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px;max-width:1600px;margin:0 auto;display:grid;gap:14px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:default;opacity:.4}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* 頁首 */
+.brandrow{display:flex;gap:14px;align-items:center}
+.logo{width:84px;height:62px;flex:none;background:#f5f6f9;border-radius:12px;display:grid;place-items:center;padding:6px 8px}
+.logo img{width:100%;height:auto;display:block}
+.top{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:center;justify-content:space-between}
+.brand .eyebrow{font-size:13px;letter-spacing:.12em;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:900;font-size:clamp(21px,2.6vw,27px);margin:0;letter-spacing:.04em}
+.now{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.now .val{font-weight:500}
+.clock{font-family:var(--f-data);font-size:22px;font-weight:500;font-variant-numeric:tabular-nums}
+.who{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center}
+
+/* 分頁列 */
+.nav{display:flex;gap:2px;border-bottom:2px solid var(--accent);overflow-x:auto}
+.nav button{border:0;background:none;padding:9px 16px 8px;font-weight:500;color:var(--muted);border-radius:6px 6px 0 0;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.nav button:hover{color:var(--ink);background:var(--line2)}
+.nav button[aria-current="page"]{background:var(--accent);color:var(--on-accent);font-weight:700}
+.lock{font-size:12px;border:1px solid currentColor;border-radius:3px;padding:0 4px;opacity:.7}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 12px;line-height:1.2}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.sm{padding:4px 9px;font-size:13px}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.group{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.range{font-family:var(--f-data);font-size:15px;font-variant-numeric:tabular-nums;margin-left:4px}
+.range b{font-family:var(--f-body);font-size:13px;color:var(--accent)}
+.pills{display:flex;gap:4px;flex-wrap:wrap}
+.pills button{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:3px 11px;font-size:13px}
+.pills button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg);font-weight:500}
+.legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:5px}
+.sw{width:13px;height:13px;border-radius:3px;border:1px solid;display:inline-block}
+.sw.edu{background:var(--edu-bg);border-color:var(--edu)}
+.sw.rent{background:var(--rent-bg);border-color:var(--rent)}
+.livedot{width:8px;height:8px;border-radius:50%;background:var(--live);display:inline-block;flex:none}
+.notice{border:1px dashed var(--line);border-radius:6px;padding:7px 12px;font-size:13.5px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* 週課表 */
+.gridbox{overflow:auto;max-height:calc(100vh - 220px);min-height:320px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table.grid{border-collapse:separate;border-spacing:0;width:100%;min-width:1120px;table-layout:fixed}
+.grid th,.grid td{border-right:1px solid var(--line2);border-bottom:1px solid var(--line2);vertical-align:top}
+.grid thead th{position:sticky;top:0;z-index:2;background:var(--surface);border-bottom:2px solid var(--line);padding:7px 8px;text-align:left;font-weight:500}
+.grid thead th .d{font-family:var(--f-data);font-size:13px;color:var(--muted);margin-left:6px}
+.grid thead th .w{font-size:14.5px;font-weight:700}
+.grid th.room{position:sticky;left:0;z-index:1;background:var(--surface);width:132px;padding:8px 10px;text-align:left;border-right:2px solid var(--line)}
+.grid thead th.room{z-index:3;font-size:13px;color:var(--muted)}
+.grid .rn{font-weight:700;font-size:14.5px}
+.grid .rc{font-size:13px;color:var(--muted)}
+.grid td{padding:4px;height:62px}
+.grid td.is-today,.grid thead th.is-today{background:var(--today)}
+.grid tbody th.room{background:var(--surface2)}
+.grid thead th.is-today{box-shadow:inset 0 3px 0 var(--accent)}
+.grid td.is-today{box-shadow:inset 1px 0 0 var(--accent),inset -1px 0 0 var(--accent)}
+.grid thead th.is-today .w{color:var(--accent)}
+td.addable{cursor:copy}
+td.addable:hover{outline:1px dashed var(--accent);outline-offset:-3px}
+.cell{display:grid;gap:4px}
+.blk{border:1px solid;border-radius:5px;padding:4px 7px;text-align:left;width:100%;display:grid;gap:0}
+.blk.edu{background:var(--edu-bg);border-color:var(--edu-bd)}
+.blk.rent{background:var(--rent-bg);border-color:var(--rent-bd)}
+.blk .t{font-family:var(--f-data);font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:5px}
+.blk.edu .t{color:var(--edu)} .blk.rent .t{color:var(--rent)}
+.blk .n{font-weight:700;font-size:14px;line-height:1.3}
+.blk .m{font-size:12px;color:var(--ink);opacity:.82}
+.blk .m .num{font-family:var(--f-data);white-space:nowrap}
+.blk.live{box-shadow:0 0 0 2px var(--live)}
+@media (prefers-reduced-motion:no-preference){.live .livedot{animation:pulse 1.6s infinite}}
+@keyframes pulse{50%{opacity:.25}}
+
+/* 今日課程 */
+.today-list{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.tcard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:4px;text-align:left;width:100%}
+.tcard .row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.tcard .time{font-family:var(--f-data);font-size:15px;font-weight:500}
+.tcard .nm{font-weight:700;font-size:15px}
+.tcard .sub{font-size:13.5px;color:var(--muted)}
+.tcard.done{opacity:.55}
+.tcard.live{border-color:var(--live);box-shadow:0 0 0 1px var(--live)}
+.status{font-size:13px;padding:1px 8px;border-radius:10px;border:1px solid var(--line);color:var(--muted);display:inline-flex;gap:5px;align-items:center}
+.status.live{color:var(--live);border-color:var(--live)}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:28px;text-align:center;color:var(--muted)}
+
+/* 管理頁 */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:12px;min-width:0}
+.panel h2{margin:0;font-size:16px}
+.tblbox{overflow-x:auto}
+table.list{border-collapse:collapse;width:100%;min-width:760px}
+.list th{font-size:13px;color:var(--muted);font-weight:500;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.list td{padding:8px;border-bottom:1px solid var(--line2);vertical-align:middle}
+.list td.num{font-family:var(--f-data);font-size:13px;white-space:nowrap}
+.list .nm{font-weight:700}
+.list .ops{display:flex;gap:4px;justify-content:flex-end}
+.tag{display:inline-block;font-size:13px;padding:0 8px;border-radius:10px;border:1px solid;white-space:nowrap}
+.tag.edu{color:var(--edu);border-color:var(--edu-bd);background:var(--edu-bg)}
+.tag.rent{color:var(--rent);border-color:var(--rent-bd);background:var(--rent-bg)}
+.search{border:1px solid var(--line);border-radius:6px;padding:7px 10px;background:var(--surface);width:min(280px,100%)}
+.list input{border:1px solid var(--line);border-radius:5px;padding:6px 8px;background:var(--bg);width:100%;min-width:0}
+.list input.cap{width:90px}
+.hint{font-size:13.5px;color:var(--muted);margin:0}
+.err{color:var(--danger);font-size:14px;white-space:pre-line}
+.err:empty{display:none}
+
+/* 登入閘門 */
+.gate{max-width:380px;margin:24px auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px;display:grid;gap:12px}
+.gate h2{margin:0;font-family:var(--f-display);font-size:20px}
+
+/* 表單 */
+.f{display:grid;gap:4px}
+.f label,.f .lab{font-size:13px;color:var(--muted)}
+.f input,.f select{border:1px solid var(--line);border-radius:5px;padding:7px 9px;background:var(--surface2);width:100%;min-width:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg label{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:5px;padding:5px 9px;font-size:13px;color:var(--ink);cursor:pointer;background:var(--bg)}
+.seg input{width:auto;accent-color:var(--accent);margin:0}
+.seg.wd label{min-width:40px;justify-content:center}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* 彈窗 */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:30}
+.modal{position:fixed;z-index:31;left:50%;top:50%;transform:translate(-50%,-50%);width:min(480px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:12px}
+.modal h3{margin:0;font-family:var(--f-display);font-size:19px}
+.kv{display:grid;grid-template-columns:72px 1fr;gap:6px 10px;margin:0}
+.kv dt{color:var(--muted);font-size:13px;padding-top:2px}
+.kv dd{margin:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:6px;z-index:40;font-size:13px}
+@media (max-width:600px){.clock{font-size:18px}.row2{grid-template-columns:1fr}}
+
+/* 列印設定視窗 */
+.modal.wide{width:min(720px,calc(100% - 32px))}
+.roompick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.roompick label{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:7px 10px;background:var(--surface2);cursor:pointer}
+.roompick label:has(input:checked){border-color:var(--accent)}
+.roompick input{accent-color:var(--accent);margin:0}
+.roompick .cnt{margin-left:auto;font-family:var(--f-data);font-size:12.5px;color:var(--muted)}
+.roompick .cnt.has{color:var(--accent)}
+.opt{display:flex;gap:8px;align-items:center;font-size:14px}
+.opt input{accent-color:var(--accent)}
+/* 列印預覽：紙張固定為白底，模擬實際輸出 */
+#prPreview{position:fixed;inset:0;z-index:35;background:var(--bg);overflow:auto;padding:calc(12px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+.pv-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 auto 12px;max-width:297mm}
+.pv-bar .hint{flex:1;min-width:200px}
+.sheet{--p-ink:#111;--p-mute:#444;--p-line:#888;--p-line2:#bbb;--p-edu:#e3f3e8;--p-edu-bd:#2f8a55;--p-rent:#fbe3e4;--p-rent-bd:#b8434b;
+  background:#fff;color:var(--p-ink);width:297mm;min-height:210mm;margin:0 auto;padding:8mm;box-shadow:0 4px 24px rgba(0,0,0,.5);font-family:var(--f-body);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet,.sheet *{color:var(--p-ink)!important}
+.sheet .t1,.sheet .rt,.sheet .rt *:not(.wk),.sheet small,.sheet .mt,.sheet .ft,.sheet .ft *{color:var(--p-mute)!important}
+.sheet .mt{white-space:nowrap}
+.sheet .sh{display:flex;align-items:center;gap:10px;border-bottom:1.5px solid var(--p-ink);padding-bottom:5px;margin-bottom:6px}
+.sheet .sh img{height:13mm;width:auto}
+.sheet .sh .tt{flex:1}
+.sheet .sh .t1{font-size:9pt;color:var(--p-mute)}
+.sheet .sh .t2{font-family:var(--f-display);font-weight:900;font-size:16pt;line-height:1.2}
+.sheet .sh .rt{text-align:right;font-size:9pt;color:var(--p-mute);display:grid;gap:2px}
+.sheet .sh .wk{font-size:12pt;font-weight:700;color:var(--p-ink);font-family:var(--f-data)}
+.sheet .lg{display:flex;gap:10px;justify-content:flex-end;align-items:center}
+.sheet .lg i{display:inline-block;width:9px;height:9px;border:1px solid;vertical-align:-1px;margin-right:3px}
+.sheet table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8pt}
+.sheet th,.sheet td{border:0.6pt solid var(--p-line);padding:2px 3px;vertical-align:top;text-align:left}
+.sheet thead th{background:#eef0f4;font-size:9pt;text-align:center}
+.sheet thead th.rm{width:27mm}
+.sheet tbody th{font-size:9pt;background:#f6f7f9}
+.sheet tbody th small{display:block;font-weight:400;color:var(--p-mute);font-size:7.5pt}
+.sheet tr{break-inside:avoid;page-break-inside:avoid}
+.sheet td{height:11mm}
+.sheet .pb{border:0.6pt solid;border-radius:2px;padding:1px 3px;margin-bottom:2px;line-height:1.25}
+.sheet .pb:last-child{margin-bottom:0}
+.sheet .pb.edu{background:var(--p-edu);border-color:var(--p-edu-bd)}
+.sheet .pb.rent{background:var(--p-rent);border-color:var(--p-rent-bd)}
+.sheet .pb b{display:block;font-size:8.5pt}
+.sheet .pb .tm{font-family:var(--f-data);font-weight:500}
+.sheet .pb .mt{color:var(--p-mute);font-size:7pt}
+.sheet .ft{margin-top:4px;font-size:7.5pt;color:var(--p-mute);display:flex;justify-content:space-between}
+/* 紙張內所有文字強制深色，不受深色主題或瀏覽器預設樣式影響 */
+#sheet,#sheet *{color:#111!important}
+#sheet .t1,#sheet .mt,#sheet small,#sheet .ft,#sheet .ft *{color:#3d3d3d!important}
+#sheet .pb.edu .tm{color:#1d6b3f!important}
+#sheet .pb.rent .tm{color:#9a2f37!important}
+@page{size:A4 landscape;margin:0}
+@media print{
+  html,body{background:#fff!important;padding:0!important}
+  :root{padding:0!important}
+  .wrap,.scrim,.modal,.toast,.pv-bar{display:none!important}
+  #prPreview{display:block!important;position:static;padding:0;overflow:visible;background:#fff}
+  .sheet{box-shadow:none;margin:0;min-height:0}
+}
+
+/* ===== 電視看板模式（以 16:9 橫式設計，字級隨畫面寬度縮放） ===== */
+#tv{position:fixed;inset:0;z-index:50;background:var(--bg);color:var(--ink);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;cursor:none;
+  padding:calc(1.6vh + env(safe-area-inset-top,0px)) max(2.2vw,env(safe-area-inset-right,0px)) calc(1.2vh + env(safe-area-inset-bottom,0px)) max(2.2vw,env(safe-area-inset-left,0px));transition:filter 2s}
+#tv.awake{cursor:default}
+#tv.night{filter:brightness(.55)}
+#tv .tv-inner{display:contents}
+.tv-head{display:flex;align-items:center;gap:1.4vw;border-bottom:.35vh solid var(--accent);padding-bottom:1.4vh}
+.tv-head .logo{width:6.6vw;height:4.6vw;border-radius:.8vw;padding:.5vw}
+.tv-head .ttl{flex:1;min-width:0}
+.tv-head .t1{font-size:1.15vw;color:var(--muted);letter-spacing:.12em}
+.tv-head .t2{font-family:var(--f-display);font-weight:900;font-size:3vw;line-height:1.15;letter-spacing:.05em}
+.tv-head .t2 em{font-style:normal;color:var(--accent)}
+.tv-time{text-align:right}
+.tv-time .d{font-size:1.5vw;font-weight:500}
+.tv-time .c{font-family:var(--f-data);font-size:4.6vw;font-weight:500;line-height:1;font-variant-numeric:tabular-nums}
+.tv-body{position:relative;min-height:0;display:grid;grid-template-rows:auto 1fr;padding-top:1.2vh}
+.tv-cols{display:grid;grid-template-columns:19% 45% 36%;font-size:1.15vw;color:var(--muted);letter-spacing:.14em;padding:0 0 .8vh}
+.tv-cols span{padding-left:1vw}
+.tv-rows{display:grid;align-content:start;gap:.9vh;min-height:0}
+.tv-row{display:grid;grid-template-columns:19% 45% 36%;height:var(--tv-row,14vh);background:var(--surface);border:1px solid var(--line);border-radius:.6vw;overflow:hidden}
+.tv-row>div{padding:.9vh 1vw;display:flex;flex-direction:column;justify-content:center;min-width:0;border-right:1px solid var(--line)}
+.tv-row>div:last-child{border-right:0}
+.tv-room .n{font-weight:700;font-size:2.3vw;line-height:1.1}
+.tv-room .s{font-size:1.1vw;color:var(--muted)}
+.tv-now.edu{background:var(--edu-bg);box-shadow:inset .4vw 0 0 var(--edu)}
+.tv-now.rent{background:var(--rent-bg);box-shadow:inset .4vw 0 0 var(--rent)}
+.tv-now .top{display:flex;align-items:center;gap:.7vw;font-family:var(--f-data);font-size:1.45vw;font-weight:500}
+.tv-now.edu .top{color:var(--edu)} .tv-now.rent .top{color:var(--rent)}
+.tv-now .top .left{margin-left:auto;font-family:var(--f-body);font-size:1.3vw;color:var(--ink);background:rgba(0,0,0,.25);padding:.1vh .7vw;border-radius:2vw}
+.tv-now .nm{font-weight:700;font-size:2.2vw;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tv-now .who,.tv-next .who{font-size:1.2vw;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tv-now .livedot{width:1vw;height:1vw}
+.tv-idle{font-size:1.5vw;color:var(--muted)}
+.tv-next .top{display:flex;gap:.8vw;align-items:baseline}
+.tv-next .tm{font-family:var(--f-data);font-size:1.6vw;font-weight:500}
+.tv-next .in{font-size:1.15vw;color:var(--accent)}
+.tv-next .nm{font-weight:700;font-size:1.75vw;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tv-next .typ{display:inline-block;width:.8vw;height:.8vw;border-radius:.15vw;margin-right:.5vw;vertical-align:.15vw}
+.tv-next .typ.edu{background:var(--edu)} .tv-next .typ.rent{background:var(--rent)}
+.tv-done{display:grid;place-content:center;text-align:center;gap:2vh;height:100%}
+.tv-done .big{font-family:var(--f-display);font-weight:900;font-size:3.6vw}
+.tv-done .sub{font-size:1.5vw;color:var(--muted)}
+.tv-done ul{list-style:none;margin:0 auto;padding:0;display:grid;gap:.8vh;text-align:left;font-size:1.55vw;min-width:50vw}
+.tv-done li{display:grid;grid-template-columns:13vw 14vw 1fr;gap:1vw;padding:.8vh 1.2vw;background:var(--surface);border:1px solid var(--line);border-radius:.5vw}
+.tv-done li .tm{font-family:var(--f-data)}
+.tv-foot{display:flex;align-items:center;gap:1.5vw;padding-top:1.1vh;font-size:1.2vw}
+.tv-foot .legend{font-size:1.2vw;gap:1.2vw}
+.tv-foot .legend .sw{width:1.1vw;height:1.1vw}
+.tv-ticker{flex:1;min-width:0;overflow:hidden;white-space:nowrap;border-left:1px solid var(--line);border-right:1px solid var(--line);padding:0 1vw;color:var(--accent);font-weight:500}
+.tv-ticker span{display:inline-block;padding-left:100%}
+@media (prefers-reduced-motion:no-preference){.tv-ticker span{animation:tick 28s linear infinite}}
+@keyframes tick{to{transform:translateX(-100%)}}
+.tv-page{font-family:var(--f-data);display:flex;gap:.6vw;align-items:center}
+.tv-page i{display:block;width:.9vw;height:.9vw;border-radius:50%;border:1px solid var(--muted)}
+.tv-page i.on{background:var(--accent);border-color:var(--accent)}
+.tv-net{color:var(--muted);font-size:1.05vw}
+.tv-net.bad{color:var(--live);font-weight:700}
+.tv-prog{position:absolute;left:0;bottom:0;height:.35vh;background:var(--accent);width:0}
+@media (prefers-reduced-motion:no-preference){.tv-prog.run{animation:prog var(--tv-dur,12s) linear forwards}}
+@keyframes prog{to{width:100%}}
+/* 看板控制列：移動滑鼠才出現 */
+.tv-ctl{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:51;display:flex;gap:6px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;opacity:0;transition:opacity .3s;pointer-events:none;font-size:13px}
+#tv.awake .tv-ctl{opacity:1;pointer-events:auto}
+.tv-ctl select{border:1px solid var(--line);border-radius:5px;padding:4px 6px;background:var(--surface2)}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brandrow">
+      <div class="logo"><img alt="國立臺北大學校徽" src="data:image/png;base64,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"></div>
+      <div class="brand">
+        <div class="eyebrow">國立臺北大學 臺北校區（合江）· 進修暨推廣部</div>
+        <h1>自強大樓 教室課表</h1>
+      </div>
+    </div>
+    <div class="now">
+      <span class="val" id="today"></span>
+      <span class="clock" id="clock">--:--:--</span>
+      <span class="who" id="who" hidden><span id="whoName"></span><button class="btn sm" id="logout">登出</button></span>
+    </div>
+  </header>
+
+  <nav class="nav" aria-label="系統分頁">
+    <button data-page="week" aria-current="page">週課表</button>
+    <button data-page="today">今日課程</button>
+    <button data-page="courses">課程管理 <span class="lock" data-lock>需登入</span></button>
+    <button data-page="rooms">教室管理 <span class="lock" data-lock>需登入</span></button>
+    <button id="tvBtn" style="margin-left:auto">電視看板 ↗</button>
+  </nav>
+
+  <div class="notice" id="demoNote" hidden>
+    <span>示範模式：尚未設定 Firebase，資料只存在這台電腦的瀏覽器，表中課程為範例。</span>
+    <button class="btn sm" id="clearDemo">清空範例課程</button>
+    <button class="btn sm" id="resetDemo">還原範例</button>
+  </div>
+
+  <!-- 週課表 -->
+  <section id="page-week">
+    <div style="display:grid;gap:10px">
+      <div class="toolbar">
+        <div class="group">
+          <button class="btn sm" id="prevW">‹ 上週</button>
+          <button class="btn sm" id="thisW">本週</button>
+          <button class="btn sm" id="nextW">下週 ›</button>
+          <input type="date" class="btn sm" id="jump" aria-label="跳至日期">
+          <span class="range" id="range"></span>
+          <button class="btn sm" id="printBtn">列印週課表</button>
+        </div>
+        <div class="pills" id="floorPills" aria-label="樓層篩選"></div>
+      </div>
+      <div class="toolbar">
+        <div class="legend">
+          <span class="chip"><span class="sw edu"></span>推廣教育課程</span>
+          <span class="chip"><span class="sw rent"></span>場地外借</span>
+          <span class="chip"><span class="livedot"></span>進行中</span>
+        </div>
+        <span class="legend" id="stats"></span>
+      </div>
+      <div class="gridbox"><table class="grid" id="grid"></table></div>
+    </div>
+  </section>
+
+  <!-- 今日課程 -->
+  <section id="page-today" hidden>
+    <div style="display:grid;gap:10px">
+      <div class="toolbar"><strong id="todayTitle"></strong><span class="legend" id="todayStats"></span></div>
+      <div class="today-list" id="todayList"></div>
+    </div>
+  </section>
+
+  <!-- 登入閘門 -->
+  <section id="page-gate" hidden>
+    <form class="gate" id="loginForm">
+      <h2>後台登入</h2>
+      <p class="hint" id="loginHint">請使用管理者提供的帳號密碼。</p>
+      <div class="f"><label for="lgEmail">帳號（Email）</label><input id="lgEmail" type="email" autocomplete="username"></div>
+      <div class="f"><label for="lgPass">密碼</label><input id="lgPass" type="password" autocomplete="current-password"></div>
+      <div class="err" id="lgErr"></div>
+      <div class="actions"><button class="btn primary" type="submit">登入</button></div>
+    </form>
+  </section>
+
+  <!-- 課程管理 -->
+  <section id="page-courses" hidden>
+    <div class="panel">
+      <div class="toolbar">
+        <h2>已排課程 <span class="hint" id="cCount" style="display:inline"></span></h2>
+        <div class="group">
+          <input class="search" id="cSearch" placeholder="搜尋課程、教師、教室" aria-label="搜尋課程">
+          <div class="pills" id="typePills">
+            <button data-type="all" aria-pressed="true">全部</button>
+            <button data-type="edu" aria-pressed="false">推廣</button>
+            <button data-type="rent" aria-pressed="false">外借</button>
+          </div>
+          <button class="btn primary" id="cNew">＋ 新增課程</button>
+        </div>
+      </div>
+      <div class="tblbox"><table class="list" id="cTable"></table></div>
+    </div>
+  </section>
+
+  <!-- 教室管理 -->
+  <section id="page-rooms" hidden>
+    <div class="panel">
+      <div class="toolbar"><h2>教室清單</h2><p class="hint">修改後離開欄位即自動儲存；排序決定週課表由上到下的順序。</p></div>
+      <div class="err" id="rErr"></div>
+      <div class="tblbox"><table class="list" id="rTable"></table></div>
+      <form id="rAdd" class="group" style="border-top:1px dashed var(--line);padding-top:12px">
+        <input class="search" id="rNewName" placeholder="新教室名稱，例：自強502" aria-label="新教室名稱" style="width:200px">
+        <input class="search" id="rNewCap" type="number" min="0" placeholder="人數" aria-label="容納人數" style="width:90px">
+        <input class="search" id="rNewNote" placeholder="備註，例：電腦教室" aria-label="備註" style="width:180px">
+        <button class="btn primary" type="submit">新增教室</button>
+      </form>
+    </div>
+  </section>
+</div>
+
+<!-- 彈窗：共用一層遮罩 -->
+<div class="scrim" id="scrim" hidden></div>
+<div class="modal" id="detBox" role="dialog" aria-modal="true" hidden></div>
+<form class="modal" id="cForm" role="dialog" aria-modal="true" novalidate hidden>
+  <h3 id="cFormTitle">新增課程</h3>
+  <div class="f"><span class="lab">類別</span>
+    <div class="seg">
+      <label><input type="radio" name="ctype" id="tyEdu" value="edu" checked>推廣教育課程</label>
+      <label><input type="radio" name="ctype" id="tyRent" value="rent">場地外借</label>
+    </div></div>
+  <div class="f"><label for="cName">課程名稱</label><input id="cName"></div>
+  <div class="row2">
+    <div class="f"><label for="cTeacher" id="cTeacherLab">授課教師</label><input id="cTeacher"></div>
+    <div class="f"><label for="cRoom">授課教室</label><select id="cRoom"></select></div>
+  </div>
+  <div class="row2">
+    <div class="f"><label for="cSD">起始日期</label><input type="date" id="cSD"></div>
+    <div class="f"><label for="cED">結束日期</label><input type="date" id="cED"></div>
+  </div>
+  <div class="f"><span class="lab">上課星期</span><div class="seg wd" id="cWD"></div></div>
+  <div class="row2">
+    <div class="f"><label for="cST">開始時間</label><input type="time" id="cST" step="300"></div>
+    <div class="f"><label for="cET">結束時間</label><input type="time" id="cET" step="300"></div>
+  </div>
+  <div class="err" id="cErr"></div>
+  <div class="actions">
+    <button class="btn primary" type="submit" id="cSave">儲存</button>
+    <button class="btn ghost" type="button" data-close>取消</button>
+  </div>
+</form>
+
+<!-- 列印：選教室 -->
+<div class="modal wide" id="prBox" role="dialog" aria-modal="true" hidden>
+  <h3>列印週課表</h3>
+  <p class="hint" id="prWeek"></p>
+  <div class="actions">
+    <button class="btn sm" id="prHas">只選本週有課的教室</button>
+    <button class="btn sm" id="prAll">全選</button>
+    <button class="btn sm" id="prNone">全不選</button>
+  </div>
+  <div class="roompick" id="prRooms"></div>
+  <label class="opt"><input type="checkbox" id="prPeriod" checked>顯示課程起訖期間</label>
+  <label class="opt"><input type="checkbox" id="prTeacher" checked>顯示授課教師／借用單位</label>
+  <div class="err" id="prErr"></div>
+  <div class="actions"><button class="btn primary" id="prGo">預覽列印</button><button class="btn ghost" data-close>取消</button></div>
+</div>
+<!-- 列印：A4 橫式預覽 -->
+<div id="prPreview" hidden>
+  <div class="pv-bar">
+    <button class="btn primary" id="pvPrint">列印</button>
+    <button class="btn" id="pvBack">返回</button>
+    <p class="hint" id="pvHint">印表機設定請選「A4、橫向」，邊界選「無」或「預設」，並勾選「背景圖形」以印出色塊。</p>
+  </div>
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<!-- 電視看板 -->
+<div id="tv" hidden>
+  <header class="tv-head">
+    <div class="logo"><img id="tvLogo" alt="國立臺北大學校徽"></div>
+    <div class="ttl"><div class="t1">國立臺北大學 臺北校區（合江）· 進修暨推廣部</div><div class="t2">自強大樓 <em id="tvScope">今日課程</em></div></div>
+    <div class="tv-time"><div class="d" id="tvDate"></div><div class="c" id="tvClock"></div></div>
+  </header>
+  <main class="tv-body">
+    <div class="tv-cols" id="tvCols"><span>教室</span><span>現在</span><span>下一堂</span></div>
+    <div class="tv-rows" id="tvRows"></div>
+    <div class="tv-prog" id="tvProg"></div>
+  </main>
+  <footer class="tv-foot">
+    <div class="legend"><span class="chip"><span class="sw edu"></span>推廣教育</span><span class="chip"><span class="sw rent"></span>場地外借</span></div>
+    <div class="tv-ticker" id="tvTicker"><span id="tvTickerText"></span></div>
+    <div class="tv-page" id="tvPage"></div>
+    <div class="tv-net" id="tvNet"></div>
+  </footer>
+  <div class="tv-ctl">
+    <label for="tvSim">預覽時間</label>
+    <select id="tvSim">
+      <option value="">現在</option>
+      <option value="2026-10-15T19:30">週四 19:30</option>
+      <option value="2026-10-17T10:00">週六 10:00</option>
+      <option value="2026-10-18T15:30">週日 15:30</option>
+      <option value="2026-10-16T22:30">週五 22:30（課程結束後）</option>
+    </select>
+    <select id="tvFloor" aria-label="樓層"></select>
+    <button class="btn sm" id="tvFull">全螢幕</button>
+    <button class="btn sm" id="tvExit">離開看板</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="firebase-config.js"></script>
+<script>
+/* ===== Firebase 設定：部署時填入；留空則為示範模式（資料存本機瀏覽器） ===== */
+/* 設定放在同目錄的 firebase-config.js（window.FIREBASE_CONFIG）；找不到時為示範模式 */
+const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey:"", authDomain:"", databaseURL:"", projectId:"", appId:"" };
+const DB_ROOT = "ziqiang-schedule";
+const FB_VER = "10.12.2";
+
+/* ===== 工具 ===== */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const pad = n => String(n).padStart(2,"0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y,m-1,d); };
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const wdOf = d => ((d.getDay()+6)%7)+1;            // 1=一 … 7=日
+const mondayOf = d => addDays(new Date(d.getFullYear(),d.getMonth(),d.getDate()), -(wdOf(d)-1));
+const WD = ["","一","二","三","四","五","六","日"];
+const md = s => s.slice(5).replace("-","/");
+const slash = s => s.replaceAll("-","/");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const nowHM = () => { const d=new Date(); return pad(d.getHours())+":"+pad(d.getMinutes()); };
+const floorOf = name => { const m = String(name).match(/B\d|\d(?=\d{2})/i); return m ? m[0].toUpperCase() : "其他"; };
+const floorLabel = f => /^B/.test(f) ? f : (f==="其他" ? f : f+"F");
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,2200); }
+function armDelete(btn,fn){
+  if(btn.dataset.armed){ fn(); return; }
+  btn.dataset.armed="1"; const t=btn.textContent; btn.textContent="確認刪除？"; btn.classList.add("danger");
+  setTimeout(()=>{ if(btn.isConnected){ delete btn.dataset.armed; btn.textContent=t; btn.classList.remove("danger"); } },3000);
+}
+
+/* ===== 預設資料 ===== */
+const SEED_ROOMS = [
+  ["自強B1 韻律教室",null,"韻律教室"],["自強B1 多功能教室",null,"多功能教室"],
+  ["自強301",null,"烹飪教室"],["自強302",46,""],["自強303",42,""],["自強304",42,""],["自強305",40,""],
+  ["自強401",28,""],["自強402",36,""],["自強403",40,""],["自強404",40,""],["自強405",68,""],["自強406",66,""],
+  ["自強503",30,""],["自強601",137,"階梯教室"]
+];
+function seedRooms(){ const o={}; SEED_ROOMS.forEach(([name,cap,note],i)=>{ const id="r"+pad(i+1); o[id]={id,name,cap,note,order:i}; }); return o; }
+function seedCourses(rooms){
+  const byName = n => Object.values(rooms).find(r=>r.name===n)?.id;
+  const list = [
+    ["日語初級會話","林老師","自強405","edu","2026-09-14","2026-12-23",[1,3],"19:00","21:00"],
+    ["Python 資料分析實務","張老師","自強402","edu","2026-09-08","2026-12-29",[2],"19:00","22:00"],
+    ["商務英文寫作","Ms. Chen","自強403","edu","2026-09-10","2026-12-17",[4],"19:00","21:00"],
+    ["中餐烹調丙級證照班","陳老師","自強301","edu","2026-09-05","2026-11-28",[6],"09:00","12:00"],
+    ["西點烘焙入門","黃老師","自強301","edu","2026-09-05","2026-11-28",[6],"13:30","16:30"],
+    ["瑜珈伸展","吳老師","自強B1 韻律教室","edu","2026-09-01","2026-12-31",[2,4],"18:30","20:00"],
+    ["書法研習","許老師","自強404","edu","2026-09-04","2026-12-25",[5],"14:00","16:00"],
+    ["攝影構圖入門","李老師","自強404","edu","2026-09-04","2026-12-25",[5],"19:00","21:00"],
+    ["不動產經紀人考照班","周老師","自強601","edu","2026-09-06","2026-12-27",[7],"09:00","17:00"],
+    ["外借：民間團體會員研習","承辦人 王先生","自強406","rent","2026-10-17","2026-10-18",[6,7],"09:00","17:00"],
+    ["外借：證照考試試場","承辦人 劉小姐","自強302","rent","2026-10-18","2026-10-18",[7],"08:00","17:30"],
+    ["外借：企業新進人員訓練","承辦人 蔡小姐","自強B1 多功能教室","rent","2026-10-12","2026-10-16",[1,2,3,4,5],"09:00","16:00"],
+  ];
+  const o={}; list.forEach(([name,teacher,room,type,sd,ed,wd,st,et])=>{ const id=uid(); o[id]={id,name,teacher,roomId:byName(room),type,startDate:sd,endDate:ed,weekdays:wd,startTime:st,endTime:et}; }); return o;
+}
+
+/* ===== 狀態與資料層 ===== */
+const S = { mode:"demo", rooms:{}, courses:{}, user:null, week:mondayOf(new Date()), page:"week", floor:"all", ctype:"all" };
+const LS_KEY = "ziqiang-schedule-demo-v1";
+let fb = null;
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({rooms:S.rooms,courses:S.courses})); }catch(e){} }
+
+async function initStore(){
+  if (FIREBASE_CONFIG.apiKey){
+    try{
+      const base=`https://www.gstatic.com/firebasejs/${FB_VER}/`;
+      await loadScript(base+"firebase-app-compat.js");
+      await Promise.all([loadScript(base+"firebase-auth-compat.js"), loadScript(base+"firebase-database-compat.js")]);
+      firebase.initializeApp(FIREBASE_CONFIG);
+      fb = { db: firebase.database(), auth: firebase.auth() };
+      S.mode = "firebase";
+      let roomsLoaded=false;
+      const seedIfEmpty=()=>{ if(S.user&&roomsLoaded&&!Object.keys(S.rooms).length) fb.db.ref(DB_ROOT+"/rooms").set(seedRooms()); };
+      fb.auth.onAuthStateChanged(u => { S.user = u ? (u.email||"管理者") : null; renderAuth(); render(); seedIfEmpty(); });
+      fb.db.ref(DB_ROOT+"/rooms").on("value", snap => { roomsLoaded=true; S.rooms = snap.val() || {}; render(); seedIfEmpty(); });
+      fb.db.ref(DB_ROOT+"/courses").on("value", snap => { S.courses = snap.val() || {}; TV.lastSync=new Date(); render(); });
+      fb.db.ref(".info/connected").on("value", snap => { TV.online = !!snap.val(); if(TV.online) TV.lastSync=new Date(); if(TV.on) renderTV(false); });
+      fb.db.ref(DB_ROOT+"/notice").on("value", snap => { TV.notice = snap.val() || ""; if(TV.on) renderTV(false); });
+      return;
+    }catch(e){ console.error(e); toast("無法連線 Firebase，改用示範模式"); }
+  }
+  S.mode = "demo";
+  let stored=null; try{ stored = JSON.parse(localStorage.getItem(LS_KEY)||"null"); }catch(e){}
+  if (stored && stored.rooms){ S.rooms=stored.rooms; S.courses=stored.courses||{}; }
+  else { S.rooms=seedRooms(); S.courses=seedCourses(S.rooms); saveLocal(); }
+  $("#demoNote").hidden = false;
+  render();
+}
+async function put(kind,obj){
+  if (S.mode==="firebase") return fb.db.ref(`${DB_ROOT}/${kind}/${obj.id}`).set(obj);
+  S[kind][obj.id]=obj; saveLocal(); render();
+}
+async function del(kind,id){
+  if (S.mode==="firebase") return fb.db.ref(`${DB_ROOT}/${kind}/${id}`).remove();
+  delete S[kind][id]; saveLocal(); render();
+}
+const roomsSorted = () => Object.values(S.rooms).sort((a,b)=>(a.order??0)-(b.order??0));
+const occursOn = (c,ds) => c.startDate<=ds && ds<=c.endDate && (c.weekdays||[]).includes(wdOf(parse(ds)));
+const roomName = id => S.rooms[id]?.name || "（教室已刪除）";
+
+/* ===== 分頁 ===== */
+const LOCKED = ["courses","rooms"];
+function go(page){
+  S.page = page;
+  $$(".nav button").forEach(b=>{ if(b.dataset.page===page) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  const needGate = LOCKED.includes(page) && !S.user;
+  ["week","today","courses","rooms"].forEach(p=>$("#page-"+p).hidden = p!==page || needGate);
+  $("#page-gate").hidden = !needGate;
+  if(needGate){ $("#lgErr").textContent=""; $("#loginHint").textContent = S.mode==="demo" ? "示範模式：尚未連接 Firebase，輸入任意 Email 與密碼即可進入。" : "請使用管理者提供的帳號密碼。"; }
+  try{ history.replaceState(null,"","#"+page); }catch(e){}
+  render();
+}
+$$(".nav button").forEach(b=>b.onclick=()=>go(b.dataset.page));
+
+function render(){
+  if(TV.on) renderTV(false);
+  if(S.page==="week") renderWeek();
+  else if(S.page==="today") renderToday();
+  else if(S.user && S.page==="courses") renderCourses();
+  else if(S.user && S.page==="rooms") renderRooms();
+}
+
+/* ===== 頁首 ===== */
+function renderHeader(){
+  const d=new Date();
+  $("#today").textContent=`${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())}（${WD[wdOf(d)]}）民國${d.getFullYear()-1911}年`;
+  $("#clock").textContent=`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+function renderAuth(){
+  $("#who").hidden = !S.user; $("#whoName").textContent = S.user||"";
+  $$("[data-lock]").forEach(l=>l.hidden=!!S.user);
+  if(LOCKED.includes(S.page)) go(S.page);
+}
+
+/* ===== 週課表 ===== */
+function renderFloorPills(){
+  const floors=[...new Set(roomsSorted().map(r=>floorOf(r.name)))];
+  if(S.floor!=="all" && !floors.includes(S.floor)) S.floor="all";
+  $("#floorPills").innerHTML=[["all","全部樓層"],...floors.map(f=>[f,floorLabel(f)])].map(([v,l])=>`<button data-floor="${v}" aria-pressed="${S.floor===v}">${l}</button>`).join("");
+}
+$("#floorPills").onclick=e=>{ const b=e.target.closest("[data-floor]"); if(b){ S.floor=b.dataset.floor; renderWeek(); } };
+
+function renderWeek(){
+  renderFloorPills();
+  const days=[...Array(7)].map((_,i)=>addDays(S.week,i));
+  const todayS=ymd(new Date()), hm=nowHM();
+  const rooms=roomsSorted().filter(r=>S.floor==="all"||floorOf(r.name)===S.floor);
+  const courses=Object.values(S.courses);
+  let edu=0, rent=0;
+  let h=`<thead><tr><th class="room">教室</th>`;
+  days.forEach(d=>{ const t=ymd(d)===todayS; h+=`<th class="${t?"is-today":""}"><span class="w">週${WD[wdOf(d)]}</span><span class="d">${md(ymd(d))}${t?" 今天":""}</span></th>`; });
+  h+=`</tr></thead><tbody>`;
+  if(!rooms.length) h+=`<tr><td colspan="8" style="padding:24px;color:var(--muted)">尚未設定教室，請到「教室管理」新增。</td></tr>`;
+  rooms.forEach(r=>{
+    h+=`<tr><th class="room" scope="row"><div class="rn">${esc(r.name)}</div><div class="rc">${r.cap?`${r.cap} 人`:""}${r.cap&&r.note?" · ":""}${esc(r.note||"")}</div></th>`;
+    days.forEach(d=>{
+      const ds=ymd(d), isT=ds===todayS;
+      const list=courses.filter(c=>c.roomId===r.id&&occursOn(c,ds)).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+      list.forEach(c=>c.type==="rent"?rent++:edu++);
+      const cls=[isT?"is-today":"", S.user?"addable":""].join(" ").trim();
+      h+=`<td class="${cls}" data-room="${r.id}" data-date="${ds}"${S.user?' title="點空白處新增課程"':""}><div class="cell">`;
+      list.forEach(c=>{
+        const live=isT&&c.startTime<=hm&&hm<c.endTime;
+        h+=`<button class="blk ${c.type==="rent"?"rent":"edu"}${live?" live":""}" data-id="${c.id}">
+          <span class="t">${live?'<span class="livedot"></span>':""}${c.startTime}–${c.endTime}</span>
+          <span class="n">${esc(c.name)}</span>
+          <span class="m">${esc(c.teacher||"")}${c.teacher?" · ":""}<span class="num">${md(c.startDate)}–${md(c.endDate)}</span></span>
+        </button>`;
+      });
+      h+=`</div></td>`;
+    });
+    h+=`</tr>`;
+  });
+  $("#grid").innerHTML=h+`</tbody>`;
+  const isThis = mondayOf(new Date()).getTime()===S.week.getTime();
+  $("#range").innerHTML=`${S.week.getFullYear()}/${md(ymd(S.week))} – ${md(ymd(days[6]))}${isThis?" <b>本週</b>":""}`;
+  $("#stats").textContent=`本週共 ${edu+rent} 堂（推廣 ${edu}、外借 ${rent}）`;
+}
+$("#prevW").onclick=()=>{ S.week=addDays(S.week,-7); renderWeek(); };
+$("#nextW").onclick=()=>{ S.week=addDays(S.week,7); renderWeek(); };
+$("#thisW").onclick=()=>{ S.week=mondayOf(new Date()); renderWeek(); };
+$("#jump").onchange=e=>{ if(e.target.value){ S.week=mondayOf(parse(e.target.value)); renderWeek(); } };
+$("#grid").addEventListener("click",e=>{
+  const b=e.target.closest(".blk"); if(b){ showDetail(b.dataset.id); return; }
+  const td=e.target.closest("td.addable");
+  if(td) openForm(null,{roomId:td.dataset.room,date:td.dataset.date});
+});
+
+/* ===== 今日課程 ===== */
+function renderToday(){
+  const d=new Date(), ds=ymd(d), hm=nowHM();
+  const list=Object.values(S.courses).filter(c=>occursOn(c,ds)).sort((a,b)=>a.startTime.localeCompare(b.startTime)||(S.rooms[a.roomId]?.order??0)-(S.rooms[b.roomId]?.order??0));
+  const st=c=> hm>=c.endTime?"done":(hm>=c.startTime?"live":"next");
+  const nLive=list.filter(c=>st(c)==="live").length, nNext=list.filter(c=>st(c)==="next").length;
+  $("#todayTitle").textContent=`${slash(ds)}（週${WD[wdOf(d)]}）共 ${list.length} 堂`;
+  $("#todayStats").textContent=`進行中 ${nLive}・稍後 ${nNext}・已結束 ${list.length-nLive-nNext}`;
+  $("#todayList").innerHTML = list.length ? list.map(c=>{ const s=st(c); return `<button class="tcard ${s}" data-id="${c.id}">
+      <div class="row"><span class="time">${c.startTime}–${c.endTime}</span>
+        <span class="status ${s==="live"?"live":""}">${s==="live"?'<span class="livedot"></span>進行中':s==="next"?"稍後":"已結束"}</span></div>
+      <div class="nm">${esc(c.name)}</div>
+      <div class="sub"><span class="tag ${c.type}">${c.type==="rent"?"外借":"推廣"}</span>　${esc(roomName(c.roomId))}${c.teacher?" · "+esc(c.teacher):""}</div>
+    </button>`; }).join("") : `<div class="empty">今天自強大樓沒有排定課程。</div>`;
+}
+$("#todayList").onclick=e=>{ const b=e.target.closest("[data-id]"); if(b) showDetail(b.dataset.id); };
+
+/* ===== 彈窗 ===== */
+function openModal(el){ closeModal(); $("#scrim").hidden=false; el.hidden=false; }
+function closeModal(){ $("#scrim").hidden=true; $("#detBox").hidden=true; $("#cForm").hidden=true; $("#prBox").hidden=true; }
+$("#scrim").onclick=closeModal;
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
+document.addEventListener("click",e=>{ if(e.target.closest("[data-close]")) closeModal(); });
+
+function showDetail(id){
+  const c=S.courses[id]; if(!c) return; const r=S.rooms[c.roomId];
+  $("#detBox").innerHTML=`<h3>${esc(c.name)}</h3>
+    <div><span class="tag ${c.type}">${c.type==="rent"?"場地外借":"推廣教育課程"}</span></div>
+    <dl class="kv">
+      <dt>${c.type==="rent"?"借用單位":"授課教師"}</dt><dd>${esc(c.teacher||"—")}</dd>
+      <dt>教室</dt><dd>${esc(roomName(c.roomId))}${r&&r.cap?`（${r.cap} 人）`:""}</dd>
+      <dt>課程期間</dt><dd>${slash(c.startDate)} – ${slash(c.endDate)}</dd>
+      <dt>上課時段</dt><dd>每週${c.weekdays.map(w=>WD[w]).join("、")}　${c.startTime}–${c.endTime}</dd>
+    </dl>
+    <div class="actions">${S.user?`<button class="btn primary" id="detEdit">編輯</button>`:""}<button class="btn" data-close>關閉</button></div>`;
+  openModal($("#detBox"));
+  if(S.user) $("#detEdit").onclick=()=>openForm(id);
+}
+
+/* ===== 課程表單 ===== */
+let editingId=null;
+$("#cWD").innerHTML=[1,2,3,4,5,6,7].map(w=>`<label><input type="checkbox" id="wd${w}" value="${w}">${WD[w]}</label>`).join("");
+const getWD=()=>[1,2,3,4,5,6,7].filter(w=>$("#wd"+w).checked);
+const setWD=a=>[1,2,3,4,5,6,7].forEach(w=>$("#wd"+w).checked=a.includes(w));
+function syncTypeLabel(){ $("#cTeacherLab").textContent=$("#tyRent").checked?"借用單位／聯絡人":"授課教師"; }
+$("#tyEdu").onchange=$("#tyRent").onchange=syncTypeLabel;
+/* 起訖同一天時自動勾該天星期 */
+function autoWD(){ const s=$("#cSD").value, e=$("#cED").value; if(s&&(!e||e===s)&&!getWD().length) setWD([wdOf(parse(s))]); }
+$("#cSD").addEventListener("change",()=>{ if(!$("#cED").value) $("#cED").value=$("#cSD").value; autoWD(); });
+$("#cED").addEventListener("change",autoWD);
+
+function openForm(id,preset){
+  if(!S.user) return;
+  editingId=id||null; $("#cForm").reset(); $("#cErr").textContent="";
+  $("#cRoom").innerHTML=roomsSorted().map(r=>`<option value="${r.id}">${esc(r.name)}${r.cap?`（${r.cap} 人）`:""}</option>`).join("");
+  const c=id&&S.courses[id];
+  if(c){
+    $(c.type==="rent"?"#tyRent":"#tyEdu").checked=true;
+    $("#cName").value=c.name; $("#cTeacher").value=c.teacher||""; $("#cRoom").value=c.roomId;
+    $("#cSD").value=c.startDate; $("#cED").value=c.endDate; setWD(c.weekdays||[]);
+    $("#cST").value=c.startTime; $("#cET").value=c.endTime;
+  } else {
+    setWD([]);
+    if(preset){ $("#cRoom").value=preset.roomId; $("#cSD").value=preset.date; $("#cED").value=preset.date; setWD([wdOf(parse(preset.date))]); }
+  }
+  syncTypeLabel();
+  $("#cFormTitle").textContent=c?"編輯課程":"新增課程"; $("#cSave").textContent=c?"更新課程":"新增課程";
+  openModal($("#cForm")); $("#cName").focus();
+}
+function findConflicts(c){
+  return Object.values(S.courses).filter(o=>{
+    if(o.id===c.id||o.roomId!==c.roomId) return false;
+    if(!(o.startTime<c.endTime&&c.startTime<o.endTime)) return false;
+    const s=o.startDate>c.startDate?o.startDate:c.startDate, e=o.endDate<c.endDate?o.endDate:c.endDate;
+    if(s>e) return false;
+    for(let d=parse(s),n=0; ymd(d)<=e && n<800; d=addDays(d,1),n++){ const w=wdOf(d); if(o.weekdays.includes(w)&&c.weekdays.includes(w)) return true; }
+    return false;
+  });
+}
+$("#cForm").onsubmit=async e=>{
+  e.preventDefault();
+  const c={ id:editingId||uid(), type:$("#tyRent").checked?"rent":"edu", name:$("#cName").value.trim(), teacher:$("#cTeacher").value.trim(),
+    roomId:$("#cRoom").value, startDate:$("#cSD").value, endDate:$("#cED").value, weekdays:getWD(), startTime:$("#cST").value, endTime:$("#cET").value };
+  const errs=[];
+  if(!c.name) errs.push("請填寫課程名稱。");
+  if(!c.roomId) errs.push("請選擇教室。");
+  if(!c.startDate||!c.endDate) errs.push("請填寫起訖日期。"); else if(c.endDate<c.startDate) errs.push("結束日期不能早於起始日期。");
+  if(!c.weekdays.length) errs.push("請至少勾選一個上課星期。");
+  if(!c.startTime||!c.endTime) errs.push("請填寫起訖時間。"); else if(c.endTime<=c.startTime) errs.push("結束時間需晚於開始時間。");
+  if(!errs.length){ const cf=findConflicts(c); if(cf.length) errs.push("與以下課程時段重疊，請調整時間或教室：\n"+cf.map(o=>`・${o.name}（週${o.weekdays.map(w=>WD[w]).join("")} ${o.startTime}–${o.endTime}，${md(o.startDate)}–${md(o.endDate)}）`).join("\n")); }
+  if(errs.length){ $("#cErr").textContent=errs.join("\n"); return; }
+  try{ const wasEdit=!!editingId; await put("courses",c); closeModal(); toast(wasEdit?"課程已更新":"課程已新增"); render(); }
+  catch(err){ $("#cErr").textContent="儲存失敗："+(err.message||err); }
+};
+
+/* ===== 課程管理 ===== */
+function renderCourses(){
+  const q=$("#cSearch").value.trim().toLowerCase();
+  const all=Object.values(S.courses);
+  const list=all.filter(c=>(S.ctype==="all"||c.type===S.ctype)&&(!q||[c.name,c.teacher,roomName(c.roomId)].join(" ").toLowerCase().includes(q)))
+    .sort((a,b)=>(S.rooms[a.roomId]?.order??99)-(S.rooms[b.roomId]?.order??99)||a.weekdays[0]-b.weekdays[0]||a.startTime.localeCompare(b.startTime));
+  $("#cCount").textContent=`共 ${all.length} 筆${list.length!==all.length?`，顯示 ${list.length} 筆`:""}`;
+  $("#cTable").innerHTML=`<thead><tr><th>類別</th><th>課程名稱</th><th>教師／借用單位</th><th>教室</th><th>星期</th><th>時間</th><th>期間</th><th></th></tr></thead><tbody>`+
+    (list.length?list.map(c=>`<tr>
+      <td><span class="tag ${c.type}">${c.type==="rent"?"外借":"推廣"}</span></td>
+      <td class="nm">${esc(c.name)}</td><td>${esc(c.teacher||"")}</td><td>${esc(roomName(c.roomId))}</td>
+      <td>${c.weekdays.map(w=>WD[w]).join("")}</td>
+      <td class="num">${c.startTime}–${c.endTime}</td>
+      <td class="num">${slash(c.startDate)}–${md(c.endDate)}</td>
+      <td><div class="ops"><button class="btn sm" data-edit="${c.id}">編輯</button><button class="btn sm" data-del="${c.id}">刪除</button></div></td>
+    </tr>`).join(""):`<tr><td colspan="8" class="hint" style="padding:20px">${q||S.ctype!=="all"?"沒有符合條件的課程。":"尚無課程，請按「新增課程」。"}</td></tr>`)+`</tbody>`;
+}
+$("#cSearch").oninput=renderCourses;
+$("#typePills").onclick=e=>{ const b=e.target.closest("[data-type]"); if(!b) return; S.ctype=b.dataset.type; $$("#typePills button").forEach(x=>x.setAttribute("aria-pressed",x===b)); renderCourses(); };
+$("#cNew").onclick=()=>openForm(null);
+$("#cTable").onclick=e=>{
+  const ed=e.target.closest("[data-edit]"); if(ed){ openForm(ed.dataset.edit); return; }
+  const dl=e.target.closest("[data-del]"); if(dl) armDelete(dl,async()=>{ await del("courses",dl.dataset.del); toast("課程已刪除"); render(); });
+};
+
+/* ===== 教室管理 ===== */
+function renderRooms(){
+  const rs=roomsSorted(), cnt=id=>Object.values(S.courses).filter(c=>c.roomId===id).length;
+  $("#rTable").innerHTML=`<thead><tr><th style="width:70px">排序</th><th>教室名稱</th><th>容納人數</th><th>備註（教室類型）</th><th>已排課程</th><th></th></tr></thead><tbody>`+
+    rs.map((r,i)=>`<tr data-id="${r.id}">
+      <td><div class="ops" style="justify-content:flex-start"><button class="btn sm" data-mv="-1" ${i===0?"disabled":""} aria-label="上移">↑</button><button class="btn sm" data-mv="1" ${i===rs.length-1?"disabled":""} aria-label="下移">↓</button></div></td>
+      <td><input id="rn-${r.id}" value="${esc(r.name)}" data-f="name" aria-label="教室名稱"></td>
+      <td><input class="cap" id="rc-${r.id}" type="number" min="0" value="${r.cap??""}" data-f="cap" placeholder="—" aria-label="容納人數"></td>
+      <td><input id="ro-${r.id}" value="${esc(r.note||"")}" data-f="note" placeholder="例：烹飪教室" aria-label="備註"></td>
+      <td class="num">${cnt(r.id)} 門</td>
+      <td><div class="ops"><button class="btn sm" data-rdel>刪除</button></div></td>
+    </tr>`).join("")+`</tbody>`;
+}
+$("#rTable").addEventListener("change",async e=>{
+  const row=e.target.closest("tr[data-id]"), f=e.target.dataset.f; if(!row||!f) return;
+  const r={...S.rooms[row.dataset.id]};
+  if(f==="cap") r.cap=e.target.value===""?null:Number(e.target.value); else r[f]=e.target.value.trim();
+  if(f==="name"&&!r.name){ $("#rErr").textContent="教室名稱不能空白。"; renderRooms(); return; }
+  $("#rErr").textContent=""; await put("rooms",r); toast("教室已更新");
+});
+$("#rTable").addEventListener("click",async e=>{
+  const row=e.target.closest("tr[data-id]"); if(!row) return; const id=row.dataset.id;
+  const mv=e.target.closest("[data-mv]");
+  if(mv){
+    const rs=roomsSorted(), i=rs.findIndex(r=>r.id===id), j=i+Number(mv.dataset.mv); if(j<0||j>=rs.length) return;
+    [rs[i],rs[j]]=[rs[j],rs[i]];
+    for(let k=0;k<rs.length;k++){ if(rs[k].order!==k){ const r={...rs[k],order:k}; if(S.mode==="firebase") await put("rooms",r); else S.rooms[r.id]=r; } }
+    if(S.mode==="demo"){ saveLocal(); render(); }
+    return;
+  }
+  const d=e.target.closest("[data-rdel]");
+  if(d){
+    const n=Object.values(S.courses).filter(c=>c.roomId===id).length;
+    if(n){ $("#rErr").textContent=`「${S.rooms[id].name}」仍排有 ${n} 門課程，請先刪除或改排到其他教室，再刪除此教室。`; return; }
+    armDelete(d,async()=>{ await del("rooms",id); $("#rErr").textContent=""; toast("教室已刪除"); });
+  }
+});
+$("#rAdd").onsubmit=async e=>{
+  e.preventDefault(); const name=$("#rNewName").value.trim();
+  if(!name){ $("#rErr").textContent="請輸入教室名稱。"; return; }
+  if(Object.values(S.rooms).some(r=>r.name===name)){ $("#rErr").textContent="已有同名教室。"; return; }
+  const cap=$("#rNewCap").value; const max=Math.max(-1,...Object.values(S.rooms).map(r=>r.order??0));
+  await put("rooms",{id:uid(),name,cap:cap===""?null:Number(cap),note:$("#rNewNote").value.trim(),order:max+1});
+  $("#rAdd").reset(); $("#rErr").textContent=""; toast("教室已新增");
+};
+
+/* ===== 登入／登出 ===== */
+$("#loginForm").onsubmit=async e=>{
+  e.preventDefault(); const em=$("#lgEmail").value.trim(), pw=$("#lgPass").value;
+  if(!em||!pw){ $("#lgErr").textContent="請輸入帳號與密碼。"; return; }
+  if(S.mode==="demo"){ S.user=em; $("#lgPass").value=""; renderAuth(); toast("已登入"); return; }
+  try{ await fb.auth.signInWithEmailAndPassword(em,pw); $("#lgPass").value=""; toast("已登入"); }
+  catch(err){ $("#lgErr").textContent = /password|credential|user-not-found/.test(err.code||"") ? "帳號或密碼不正確，請向管理者確認。" : "登入失敗："+(err.message||err.code); }
+};
+$("#logout").onclick=async()=>{ if(S.mode==="firebase") await fb.auth.signOut(); S.user=null; closeModal(); renderAuth(); render(); toast("已登出"); };
+
+/* 示範資料 */
+$("#clearDemo").onclick=e=>armDelete(e.target,()=>{ S.courses={}; saveLocal(); render(); toast("已清空範例課程"); });
+$("#resetDemo").onclick=e=>armDelete(e.target,()=>{ S.rooms=seedRooms(); S.courses=seedCourses(S.rooms); saveLocal(); render(); toast("已還原範例資料"); });
+
+
+/* ===== 列印週課表 ===== */
+let prSel=null;
+const weekDays=()=>[...Array(7)].map((_,i)=>addDays(S.week,i));
+const weekCount=rid=>{ let n=0; weekDays().forEach(d=>{ const ds=ymd(d); n+=Object.values(S.courses).filter(c=>c.roomId===rid&&occursOn(c,ds)).length; }); return n; };
+function openPrint(){
+  const rs=roomsSorted(), days=weekDays();
+  if(!prSel) prSel=new Set(rs.filter(r=>weekCount(r.id)>0).map(r=>r.id));
+  $("#prWeek").textContent=`週次：${slash(ymd(days[0]))}（一）– ${md(ymd(days[6]))}（日）。預設勾選本週有排課的教室，右側數字為本週堂數。`;
+  $("#prRooms").innerHTML=rs.map(r=>{ const n=weekCount(r.id); return `<label><input type="checkbox" id="pr-${r.id}" value="${r.id}" ${prSel.has(r.id)?"checked":""}>${esc(r.name)}<span class="cnt ${n?"has":""}">${n}</span></label>`; }).join("");
+  $("#prErr").textContent=""; openModal($("#prBox"));
+}
+$("#printBtn").onclick=()=>{ prSel=null; openPrint(); };
+$("#prRooms").onchange=e=>{ const v=e.target.value; e.target.checked?prSel.add(v):prSel.delete(v); };
+const setPick=fn=>{ $$("#prRooms input").forEach(i=>{ i.checked=fn(i.value); i.checked?prSel.add(i.value):prSel.delete(i.value); }); };
+$("#prHas").onclick=()=>setPick(id=>weekCount(id)>0);
+$("#prAll").onclick=()=>setPick(()=>true);
+$("#prNone").onclick=()=>setPick(()=>false);
+$("#prGo").onclick=()=>{
+  const rooms=roomsSorted().filter(r=>prSel.has(r.id));
+  if(!rooms.length){ $("#prErr").textContent="請至少勾選一間教室。"; return; }
+  buildSheet(rooms); closeModal(); $("#prPreview").hidden=false; $("#prPreview").scrollTop=0;
+};
+$("#pvBack").onclick=()=>{ $("#prPreview").hidden=true; openPrint(); };
+$("#pvPrint").onclick=()=>{
+  try{ window.print(); }catch(e){}
+  if(window.self!==window.top) $("#pvHint").textContent="在 Claude 的預覽視窗中無法開啟列印對話框。部署到網站或直接用瀏覽器開啟此 HTML 檔後，按「列印」即可輸出（A4 橫向、勾選背景圖形）。";
+};
+function buildSheet(rooms){
+  const days=weekDays(), showP=$("#prPeriod").checked, showT=$("#prTeacher").checked;
+  const now=new Date(), logo=document.querySelector(".logo img").src;
+  let h=`<div class="sh"><img src="${logo}" alt="">
+    <div class="tt"><div class="t1">國立臺北大學 臺北校區（合江）· 進修暨推廣部</div><div class="t2">自強大樓 教室週課表</div></div>
+    <div class="rt"><span class="wk">${slash(ymd(days[0]))} – ${md(ymd(days[6]))}</span>
+      <span class="lg"><span><i style="background:var(--p-edu);border-color:var(--p-edu-bd)"></i>推廣教育課程</span><span><i style="background:var(--p-rent);border-color:var(--p-rent-bd)"></i>場地外借</span></span></div></div>
+    <table><thead><tr><th class="rm">教室</th>${days.map(d=>`<th>週${WD[wdOf(d)]} ${md(ymd(d))}</th>`).join("")}</tr></thead><tbody>`;
+  rooms.forEach(r=>{
+    h+=`<tr><th>${esc(r.name)}<small>${r.cap?r.cap+" 人":""}${r.cap&&r.note?" · ":""}${esc(r.note||"")}</small></th>`;
+    days.forEach(d=>{ const ds=ymd(d);
+      const list=Object.values(S.courses).filter(c=>c.roomId===r.id&&occursOn(c,ds)).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+      h+=`<td>${list.map(c=>`<div class="pb ${c.type}"><span class="tm">${c.startTime}–${c.endTime}</span><b>${esc(c.name)}</b>${showT&&c.teacher?`<span class="mt">${esc(c.teacher)}</span>`:""}${showP?`<span class="mt">${showT&&c.teacher?" · ":""}${md(c.startDate)}–${md(c.endDate)}</span>`:""}</div>`).join("")}</td>`; });
+    h+=`</tr>`;
+  });
+  h+=`</tbody></table><div class="ft"><span>共 ${rooms.length} 間教室</span><span>列印日期：${slash(ymd(now))} ${pad(now.getHours())}:${pad(now.getMinutes())}</span></div>`;
+  $("#sheet").innerHTML=h;
+}
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!$("#prPreview").hidden) $("#prPreview").hidden=true; });
+
+
+/* ===== 電視看板 ===== */
+const TV = { on:false, page:0, pages:1, dur:12000, offset:0, floor:"all", timer:null, notice:"公告範例：本週六 09:00–17:00 自強406 場地外借辦理研習，請勿進入。公告內容之後可由後台設定。", online:true, lastSync:new Date() };
+const tvNow = () => new Date(Date.now()+TV.offset);
+const mins = hm => { const [h,m]=hm.split(":").map(Number); return h*60+m; };
+function enterTV(floor){
+  TV.on=true; TV.floor=floor||"all"; TV.page=0;
+  $("#tvLogo").src=document.querySelector(".logo img").src;
+  const floors=[...new Set(roomsSorted().map(r=>floorOf(r.name)))];
+  $("#tvFloor").innerHTML=[["all","全部樓層"],...floors.map(f=>[f,floorLabel(f)])].map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
+  $("#tvFloor").value=TV.floor;
+  $("#tv").hidden=false; document.body.style.overflow="hidden";
+  try{ history.replaceState(null,"","#tv"+(TV.floor!=="all"?"-"+TV.floor+(/^\d$/.test(TV.floor)?"F":""):"")); }catch(e){}
+  renderTV(true); clearInterval(TV.timer); TV.timer=setInterval(()=>{ TV.page=(TV.page+1)%TV.pages; renderTV(true); },TV.dur);
+}
+function exitTV(){
+  TV.on=false; clearInterval(TV.timer); $("#tv").hidden=true; document.body.style.overflow="";
+  try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
+  go(S.page);
+}
+$("#tvBtn").onclick=()=>enterTV();
+$("#tvExit").onclick=exitTV;
+$("#tvFull").onclick=()=>{ try{ const r=document.documentElement.requestFullscreen?.(); r&&r.catch&&r.catch(()=>toast("此環境不支援全螢幕")); }catch(e){ toast("此環境不支援全螢幕"); } };
+$("#tvSim").onchange=e=>{ TV.offset=e.target.value? new Date(e.target.value).getTime()-Date.now() : 0; TV.page=0; renderTV(true); };
+$("#tvFloor").onchange=e=>{ TV.floor=e.target.value; TV.page=0; renderTV(true); };
+let tvWake=null;
+$("#tv").addEventListener("mousemove",()=>{ $("#tv").classList.add("awake"); clearTimeout(tvWake); tvWake=setTimeout(()=>$("#tv").classList.remove("awake"),3000); });
+document.addEventListener("keydown",e=>{ if(TV.on&&e.key==="Escape") exitTV(); });
+
+function renderTVClock(){
+  const d=tvNow();
+  $("#tvDate").textContent=`${d.getFullYear()-1911}年${d.getMonth()+1}月${d.getDate()}日（${WD[wdOf(d)]}）`;
+  $("#tvClock").textContent=`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  $("#tv").classList.toggle("night", d.getHours()>=22||d.getHours()<7);
+}
+function renderTV(newPage){
+  if(!TV.on) return;
+  renderTVClock();
+  const d=tvNow(), ds=ymd(d), hm=pad(d.getHours())+":"+pad(d.getMinutes()), nowM=mins(hm);
+  $("#tvScope").textContent = TV.floor==="all" ? "今日課程" : `${floorLabel(TV.floor)} 今日課程`;
+  const rooms=roomsSorted().filter(r=>TV.floor==="all"||floorOf(r.name)===TV.floor);
+  const rows=[];
+  rooms.forEach(r=>{
+    const list=Object.values(S.courses).filter(c=>c.roomId===r.id&&occursOn(c,ds)).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+    const cur=list.find(c=>c.startTime<=hm&&hm<c.endTime), nxt=list.find(c=>c.startTime>hm);
+    if(cur||nxt) rows.push({r,cur,nxt});
+  });
+  const rowsEl=$("#tvRows");
+  if(!rows.length){
+    $("#tvCols").style.visibility="hidden";
+    const tm=addDays(d,1), ts=ymd(tm);
+    const tl=Object.values(S.courses).filter(c=>occursOn(c,ts)&&rooms.some(r=>r.id===c.roomId)).sort((a,b)=>a.startTime.localeCompare(b.startTime)).slice(0,7);
+    rowsEl.innerHTML=`<div class="tv-done"><div class="big">${nowM<12*60&&Object.values(S.courses).some(c=>occursOn(c,ds))?"今日課程尚未開始":"今日課程皆已結束"}</div>
+      <div class="sub">明日 ${tm.getMonth()+1}/${tm.getDate()}（${WD[wdOf(tm)]}）課程預告</div>
+      ${tl.length?`<ul>${tl.map(c=>`<li><span class="tm">${c.startTime}–${c.endTime}</span><span>${esc(roomName(c.roomId))}</span><b>${esc(c.name)}</b></li>`).join("")}</ul>`:`<div class="sub">明日無排定課程</div>`}</div>`;
+    TV.pages=1; $("#tvPage").innerHTML=""; $("#tvProg").classList.remove("run");
+  } else {
+    $("#tvCols").style.visibility="";
+    const avail=rowsEl.getBoundingClientRect().height || innerHeight*0.62;
+    const per=Math.max(1,Math.floor((avail+innerHeight*0.009)/(innerHeight*0.14+innerHeight*0.009)));
+    TV.pages=Math.ceil(rows.length/per); if(TV.page>=TV.pages) TV.page=0;
+    const show=rows.slice(TV.page*per,(TV.page+1)*per);
+    const who=c=>c.teacher?esc(c.teacher):"";
+    rowsEl.innerHTML=show.map(({r,cur,nxt})=>{
+      const nowCell = cur ? `<div class="tv-now ${cur.type}">
+          <div class="top"><span class="livedot"></span>${cur.startTime}–${cur.endTime}<span class="left">還有 ${fmtLeft(mins(cur.endTime)-nowM)}</span></div>
+          <div class="nm">${esc(cur.name)}</div><div class="who">${who(cur)}</div></div>`
+        : `<div class="tv-now"><span class="tv-idle">目前無課程</span></div>`;
+      const nextCell = nxt ? `<div class="tv-next">
+          <div class="top"><span class="tm">${nxt.startTime}–${nxt.endTime}</span><span class="in">${fmtLeft(mins(nxt.startTime)-nowM)}後開始</span></div>
+          <div class="nm"><span class="typ ${nxt.type}"></span>${esc(nxt.name)}</div><div class="who">${who(nxt)}</div></div>`
+        : `<div class="tv-next"><span class="tv-idle">今日無後續課程</span></div>`;
+      return `<div class="tv-row"><div class="tv-room"><div class="n">${esc(r.name)}</div><div class="s">${r.cap?r.cap+" 人":""}${r.cap&&r.note?" · ":""}${esc(r.note||"")}</div></div>${nowCell}${nextCell}</div>`;
+    }).join("");
+    $("#tvPage").innerHTML = TV.pages>1 ? [...Array(TV.pages)].map((_,i)=>`<i class="${i===TV.page?"on":""}"></i>`).join("")+`<span>${TV.page+1}/${TV.pages}</span>` : "";
+    const pg=$("#tvProg");
+    if(TV.pages>1 && newPage){ pg.classList.remove("run"); void pg.offsetWidth; pg.style.setProperty("--tv-dur",TV.dur+"ms"); pg.classList.add("run"); }
+    if(TV.pages<=1) pg.classList.remove("run");
+  }
+  $("#tvTickerText").textContent=TV.notice; $("#tvTicker").hidden=!TV.notice;
+  const net=$("#tvNet");
+  if(S.mode==="demo"){ net.className="tv-net"; net.textContent="示範模式"; }
+  else if(TV.online){ net.className="tv-net"; net.textContent="即時連線"; }
+  else { net.className="tv-net bad"; net.textContent=`連線中斷・資料更新於 ${pad(TV.lastSync.getHours())}:${pad(TV.lastSync.getMinutes())}`; }
+}
+function fmtLeft(m){ if(m<60) return m+" 分"; const h=Math.floor(m/60), r=m%60; return r?`${h} 小時 ${r} 分`:`${h} 小時`; }
+/* 每 10 分鐘微幅位移，避免烙印 */
+setInterval(()=>{ if(TV.on){ const x=Math.round(Math.random()*6-3), y=Math.round(Math.random()*6-3); $("#tv").style.transform=`translate(${x}px,${y}px)`; } },600000);
+/* 每天凌晨 3 點重新載入 */
+setInterval(()=>{ const d=new Date(); if(TV.on&&d.getHours()===3&&d.getMinutes()===0&&d.getSeconds()<2) location.reload(); },1000);
+addEventListener("resize",()=>{ if(TV.on) renderTV(false); });
+
+/* ===== 啟動 ===== */
+renderHeader();
+setInterval(()=>{ renderHeader(); if(TV.on){ renderTVClock(); if(tvNow().getSeconds()===0) renderTV(false); } else if(new Date().getSeconds()===0 && (S.page==="week"||S.page==="today")) render(); },1000);
+const startPage = (location.hash||"").slice(1);
+go(["week","today","courses","rooms"].includes(startPage)?startPage:"week");
+initStore().then(()=>{ const m=startPage.match(/^tv(?:-(B\d|\d)F?)?$/i); if(m) enterTV(m[1]?m[1].toUpperCase():"all"); });
+</script>

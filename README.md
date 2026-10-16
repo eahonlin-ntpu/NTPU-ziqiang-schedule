@@ -20,17 +20,20 @@
 ### 1. Firebase 設定檔
 將 `firebase-config.example.js` 另存為 `firebase-config.js`，填入 apiKey 與 appId（Firebase 主控台 → 專案設定 → 一般 → 您的應用程式 → SDK 設定）。找不到此檔時系統以示範模式執行。
 
-### 2. Realtime Database 安全規則（已於 2026/10/16 套用）
+### 2. Realtime Database 安全規則（2026/10/16 套用）
+本專案與「資產收入分析系統」（NTPU-income-analysis，路徑 `income`）共用。
 ```json
 {
   "rules": {
+    "income": { ".read": "auth != null", ".write": "auth != null" },
     "ziqiang-schedule": { ".read": true, ".write": "auth != null" }
   }
 }
 ```
-`ziqiang-schedule` 公開讀取、登入後才能寫入；其餘路徑一律拒絕。
-原場地預約的 `bookings` 資料仍保留在資料庫中，但已停止讀寫。若需恢復，於 `"rules"` 內加回
-`"bookings": { ".read": true, ".write": true }`。
+- `income`：登入後才能讀寫
+- `ziqiang-schedule`：公開讀取（週課表、電視看板），登入後才能寫入
+- 其餘路徑一律拒絕。日後新系統要用此專案時，需在 `"rules"` 內另外加上該路徑
+- 兩套系統共用 Authentication 帳號：任一帳號都能登入兩邊的後台
 
 ### 3. 後台管理帳號
 Authentication → 使用者 → 新增使用者，以電子郵件與密碼建立（「電子郵件／密碼」登入方式已啟用）。
